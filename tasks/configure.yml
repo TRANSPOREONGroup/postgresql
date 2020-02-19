@@ -107,31 +107,9 @@
     {% if postgresql_wal_directory != "" and postgresql_version is version_compare('10', '>=') %}--waldir={{ postgresql_wal_directory }} {% endif %}
   become: yes
   become_user: "{{ postgresql_service_user }}"
-  ansible.builtin.shell: >-
-    pg_createcluster
-    --locale {{ postgresql_locale | quote }}
-    -e {{ postgresql_encoding | quote }}
-    -d {{ postgresql_data_directory | quote }}
-    {{ postgresql_version | quote }} {{ postgresql_cluster_name | quote }}
-    --
-    {% if (postgresql_data_checksums | default(false)) | bool and postgresql_version is version('9.3', '>=') -%}
-    --data-checksums
-    {%- endif -%}
-    {% if (postgresql_pwfile | default('')) | length > 0 -%}
-    --pwfile={{ postgresql_pwfile | quote }}
-    {%- endif -%}
-    {% if (postgresql_wal_directory | default('')) | length > 0 and postgresql_version is version('10', '<') -%}
-    --xlogdir={{ postgresql_wal_directory | quote }}
-    {%- endif -%}
-    {% if (postgresql_wal_directory | default('')) | length > 0 and postgresql_version is version('10', '>=') -%}
-    --waldir={{ postgresql_wal_directory | quote }}
-    {%- endif -%}
-  args:
-    warn: false
-  when:
-    - ansible_facts['os_family'] == 'Debian'
-    - (postgresql_cluster_reset | default(false)) | bool
-    - (pgdata_dir_exist.changed | default(false)) | bool
+  when: ansible_os_family == "Debian" and postgresql_cluster_reset
+  #and pgdata_dir_exist.changed because of second run will then fail
+  ignore_errors: yes
 
 - name: PostgreSQL | Update systemd | Debian
   become: true
