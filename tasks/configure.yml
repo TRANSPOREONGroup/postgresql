@@ -134,10 +134,9 @@
   ansible.builtin.service:
     name: "{{ postgresql_service_name }}"
     state: started
-  when:
-    - ansible_facts['os_family'] == 'Debian'
-    - (postgresql_cluster_reset | default(false)) | bool
-    - (pgdata_dir_exist.changed | default(false)) | bool
+  become: yes
+  when: ansible_os_family == "Debian" and postgresql_cluster_reset
+  #and pgdata_dir_exist.changed
 
 - name: PostgreSQL | Check whether the postgres data directory is initialized | RedHat
   ansible.builtin.stat:
