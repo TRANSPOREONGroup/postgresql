@@ -24,7 +24,6 @@
     id: "{{ postgresql_apt_key_id }}"
     url: "{{ postgresql_apt_key_url }}"
     state: present
-    become: yes
   when: postgresql_apt_key_url and postgresql_apt_key_id and postgresql_install_repository
 
 # --- Install the PGDG key into a keyring file ---
