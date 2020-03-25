@@ -19,12 +19,13 @@
     update_cache: true
   when: ansible_facts['pkg_mgr'] == 'apt'
 
-# --- Derive the PGDG suite from the host codename ---
-# Examples: bookworm -> bookworm-pgdg, bullseye -> bullseye-pgdg, jammy -> jammy-pgdg, noble -> noble-pgdg
-- name: Compute PGDG suite from distribution codename
-  ansible.builtin.set_fact:
-    postgresql_apt_suite: "{{ ansible_facts['distribution_release'] }}-pgdg"
-  when: ansible_facts['pkg_mgr'] == 'apt'
+- name: PostgreSQL | Add PostgreSQL repository apt-key | apt
+  apt_key:
+    id: "{{ postgresql_apt_key_id }}"
+    url: "{{ postgresql_apt_key_url }}"
+    state: present
+    become: yes
+  when: postgresql_apt_key_url and postgresql_apt_key_id and postgresql_install_repository
 
 # --- Install the PGDG key into a keyring file ---
 # This avoids deprecated apt_key usage and works with newer apt-secure expectations.
@@ -44,6 +45,7 @@
     filename: postgres
     repo: "{{ postgresql_apt_repository }}"
     state: present
+  become: yes
   when: postgresql_apt_repository | default('') != '' and postgresql_install_repository
 
 # --- Add the PGDG APT repository (HTTPS + signed-by) ---
