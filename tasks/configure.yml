@@ -121,10 +121,6 @@
   #and pgdata_dir_exist.changed because of second run will then fail
   ignore_errors: yes
 
-- name:
-  debug:
-    msg: Reset on postgresql_cluster_reset {{ postgresql_cluster_reset }} {{ postgresql_cluster_name }}
-
 - name: PostgreSQL | Update systemd | Debian
   become: true
   ansible.builtin.command: systemctl daemon-reload
