@@ -1,20 +1,15 @@
 # file: postgresql/tasks/configure.yml
-
-- name: PostgreSQL | Make sure the postgres data directory exists
-  file:
-    path: "{{postgresql_data_directory}}"
-    state: absent
-    mode: 0700
-  register: postgresql_cluster_reset
+- name: PostgreSQL | Set not postgresql_cluster.stat.exists only when no cluster exists
+  stat:
+    path: "{{ postgresql_data_directory }}/PG_VERSION"
+  register: postgresql_cluster
 
 - name: PostgreSQL | Drop the data directory | RedHat
   ansible.builtin.file:
     path: "{{ postgresql_data_directory }}"
     state: absent
   register: pgdata_dir_remove
-  when:
-    - ansible_facts['os_family'] == 'RedHat'
-    - (postgresql_cluster_reset | default(false)) | bool
+  when: ansible_os_family == "RedHat" and not postgresql_cluster.stat.exists
 
 - name: PostgreSQL | Make sure the postgres data directory exists
   file:
@@ -91,14 +86,14 @@
     name: "{{ postgresql_service_name }}"
     state: stopped
   become: yes
-  when: ansible_os_family == "Debian" and postgresql_cluster_reset
+  when: ansible_os_family == "Debian" and not postgresql_cluster.stat.exists
   #and pgdata_dir_exist.changed
 
 - name: PostgreSQL | Reset the cluster - drop the existing one | Debian
   shell: pg_dropcluster {{ postgresql_version }} main
   become: yes
   #become_user: "{{ postgresql_service_user }}"
-  when: ansible_os_family == "Debian" and postgresql_cluster_reset
+  when: ansible_os_family == "Debian" and not postgresql_cluster.stat.exists
   ignore_errors: yes
 
 - name: PostgreSQL | Register cluster owner id
@@ -117,19 +112,14 @@
     {% if postgresql_wal_directory != "" and postgresql_version is version_compare('10', '>=') %}--waldir={{ postgresql_wal_directory }} {% endif %}
   become: yes
   #become_user: "{{ postgresql_service_user }}"
-  when: ansible_os_family == "Debian" and postgresql_cluster_reset
+  when: ansible_os_family == "Debian" and not postgresql_cluster.stat.exists
   #and pgdata_dir_exist.changed because of second run will then fail
   ignore_errors: yes
 
 - name: PostgreSQL | Update systemd | Debian
-  become: true
-  ansible.builtin.command: systemctl daemon-reload
-  args:
-    warn: false
-  when:
-    - ansible_facts['os_family'] == 'Debian'
-    - (postgresql_cluster_reset | default(false)) | bool
-    - (pgdata_dir_exist.changed | default(false)) | bool
+  command: systemctl daemon-reload
+  become: yes
+  when: ansible_os_family == "Debian" and not postgresql_cluster.stat.exists and pgdata_dir_exist.changed
 
 - name: PostgreSQL | Start PostgreSQL | Debian
   become: true
@@ -137,12 +127,13 @@
     name: "{{ postgresql_service_name }}"
     state: started
   become: yes
-  when: ansible_os_family == "Debian" and postgresql_cluster_reset
+  when: ansible_os_family == "Debian" and not postgresql_cluster.stat.exists
   #and pgdata_dir_exist.changed
 
 - name: PostgreSQL | Check whether the postgres data directory is initialized | RedHat
   ansible.builtin.stat:
     path: "{{ postgresql_data_directory }}/PG_VERSION"
+  when: ansible_os_family == "RedHat" and not postgresql_cluster.stat.exists
   register: pgdata_dir_initialized
   when:
     - ansible_facts['os_family'] == 'RedHat'
@@ -151,33 +142,10 @@
 - name: PostgreSQL | Initialize the database | RedHat
   become: true
   become_user: "{{ postgresql_service_user }}"
-  ansible.builtin.command: >-
-    {{ postgresql_bin_directory | quote }}/initdb
-    -D {{ postgresql_data_directory | quote }}
-    --locale={{ postgresql_locale | quote }}
-    --encoding={{ postgresql_encoding | quote }}
-    {% if (postgresql_data_checksums | default(false)) | bool and postgresql_version is version('9.3', '>=') -%}
-    --data-checksums
-    {%- endif -%}
-    {% if (postgresql_pwfile | default('')) | length > 0 -%}
-    --pwfile={{ postgresql_pwfile | quote }}
-    {%- endif -%}
-    {% if (postgresql_wal_directory | default('')) | length > 0 and postgresql_version is version('10', '<') -%}
-    --xlogdir={{ postgresql_wal_directory | quote }}
-    {%- endif -%}
-    {% if (postgresql_wal_directory | default('')) | length > 0 and postgresql_version is version('10', '>=') -%}
-    --waldir={{ postgresql_wal_directory | quote }}
-    {%- endif -%}
-    {% if (postgresql_wal_segsize | default('')) | length > 0 and postgresql_version is version('11', '>=') -%}
-    --wal-segsize={{ postgresql_wal_segsize | quote }}
-    {%- endif -%}
-  args:
-    warn: false
-  when:
-    - ansible_facts['os_family'] == 'RedHat'
-    - (postgresql_cluster_reset | default(false)) | bool
-      or (pgdata_dir_exist.changed | default(false)) | bool
-      or (not (pgdata_dir_initialized.stat.exists | default(false)))
+  when: ansible_os_family == "RedHat" and
+        (not postgresql_cluster.stat.exists or
+         pgdata_dir_exist.changed or
+         not pgdata_dir_initialized.stat.exists)
 
 - name: PostgreSQL | Verify postgresql cluster version
   command: grep ^{{ postgresql_version }}$ {{ postgresql_data_directory }}/PG_VERSION
@@ -252,7 +220,7 @@
     group: "{{ postgresql_service_group }}"
     mode: 0640
   register: postgresql_configuration_pt4
-  notify: restart postgresql
+  notify: reload postgresql
 
 - name: PostgreSQL | Create folder for additional configuration files
   file:
@@ -266,10 +234,9 @@
   ansible.builtin.file:
     path: "/etc/systemd/system/postgresql-{{ postgresql_version }}.service.d"
     state: directory
-    mode: "0755"
-  when:
-    - ansible_facts['os_family'] == 'RedHat'
-  notify: restart postgresql
+    mode: 0755
+  when: ansible_os_family == "RedHat"
+  notify: reload postgresql
 
 - name: PostgreSQL | Use the conf directory when starting the Postgres service | RedHat
   ansible.builtin.template:
@@ -290,7 +257,7 @@
     owner: "{{ postgresql_service_user }}"
     group: "{{ postgresql_service_group }}"
     mode: u=rwX,g=rwXs,o=rx
-  notify: restart postgresql
+  notify: reload postgresql
 
 - block:
     - name: PostgreSQL | Ensure PostgreSQL is running
