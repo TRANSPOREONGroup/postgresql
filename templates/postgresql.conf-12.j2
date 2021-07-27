@@ -256,16 +256,36 @@ recovery_end_command = '{{ postgresql_recovery_end_command }}'      # command to
 
 # Set these only when performing a targeted recovery.
 
-recovery_target = '{{ postgresql_recovery_target }}'           # 'immediate' to end recovery as soon as a
+{% if not postgresql_recovery_target %}
+#recovery_target = '{{ postgresql_recovery_target }}'           # 'immediate' to end recovery as soon as a
+{% else %}
+recovery_target = '{{ postgresql_recovery_target }}'
+{% endif %}
                                 # consistent state is reached
                                 # (change requires restart)
+{% if not postgresql_recovery_target_name %}
+#recovery_target_name = '{{ postgresql_recovery_target_name }}'      # the named restore point to which recovery will proceed
+{% else %}
 recovery_target_name = '{{ postgresql_recovery_target_name }}'      # the named restore point to which recovery will proceed
+{% endif %}
                                 # (change requires restart)
+{% if not postgresql_recovery_target_time %}
+#recovery_target_time = '{{ postgresql_recovery_target_time }}'      # the time stamp up to which recovery will proceed
+{% else %}
 recovery_target_time = '{{ postgresql_recovery_target_time }}'      # the time stamp up to which recovery will proceed
+{% endif %}
                                 # (change requires restart)
+{% if not postgresql_recovery_target_xid %}
+#recovery_target_xid = '{{ postgresql_recovery_target_xid }}'       # the transaction ID up to which recovery will proceed
+{% else %}
 recovery_target_xid = '{{ postgresql_recovery_target_xid }}'       # the transaction ID up to which recovery will proceed
+{% endif %}
                                 # (change requires restart)
+{% if not postgresql_recovery_target_lsn %}
+#recovery_target_lsn = '{{ postgresql_recovery_target_lsn }}'       # the WAL LSN up to which recovery will proceed
+{% else %}
 recovery_target_lsn = '{{ postgresql_recovery_target_lsn }}'       # the WAL LSN up to which recovery will proceed
+{% endif %}
                                 # (change requires restart)
 recovery_target_inclusive = {{ 'on' if postgresql_recovery_target_inclusive else 'off' }} # Specifies whether to stop:
                                 # just after the specified recovery target (on)
