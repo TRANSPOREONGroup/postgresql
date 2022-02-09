@@ -22,8 +22,7 @@
   when: postgresql_databases | length > 0
 
 - name: PostgreSQL | Add extensions to the databases
-  become: yes
-  become_user: "{{ postgresql_admin_user }}"
+  become: True
   community.postgresql.postgresql_ext:
     db: "{{ item.0.db }}"
     login_unix_socket: "/srv/{{ postgresql_service_user }}"
@@ -34,7 +33,8 @@
   with_subelements:
     - "{{ postgresql_database_extensions }}"
     - extensions
-  ignore_errors: "{{ ansible_check_mode }}"
+  register: result
+  when: tp_db_service_state == 'PRIMARY'
 
 - name: PostgreSQL | Add hstore to the databases with the requirement
   become: yes
@@ -49,7 +49,7 @@
 - name: PostgreSQL | Add uuid-ossp to the database with the requirement
   become: yes
   become_user: "{{postgresql_service_user}}"
-  shell: "{{ postgresql_bin_directory}}/psql {{item.name}} --port={{ postgresql_port | int }} --username {{postgresql_admin_user}} -c 'CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";'"
+  shell: '{{ postgresql_bin_directory}}/psql {{item.name}} --port={{ postgresql_port | int }} --username {{postgresql_admin_user}} -c ''CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'''
   with_items: "{{postgresql_databases}}"
   register: uuid_ext_result
   failed_when: uuid_ext_result.rc != 0 and ("already exists, skipping" not in uuid_ext_result.stderr)
