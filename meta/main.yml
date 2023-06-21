@@ -13,23 +13,24 @@ galaxy_info:
   platforms:
     - name: Debian
       versions:
+        - jessie
+        - stretch
+        - buster
         - bullseye
-        - bookworm
-
-    - name: EL
-      versions:
-        - "8"
-        - "9"
-
     - name: Ubuntu
       versions:
-        - focal
-        - jammy
-        - noble
-
-    - name: Fedora
+        - xenial
+        - bionic
+    - name: EL
       versions:
-        - "40"
+        - 6
+        - 7
+  #
+  # DISABLED
+  #
+  #  - name: Fedora
+  #    versions:
+  #    - 27
 
   galaxy_tags:
     - postgresql
