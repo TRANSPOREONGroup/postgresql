@@ -170,6 +170,8 @@ postgresql_unix_socket_permissions: "0777" # begin with 0 to use octal notation
 postgresql_bonjour: off # advertise server via Bonjour
 postgresql_bonjour_name: "" # defaults to the computer name
 
+postgresql_reserved_connections: 0
+postgresql_client_connection_check_interval: 0
 
 # - Security and Authentication -
 
@@ -198,10 +200,14 @@ postgresql_password_encryption_method: md5
 postgresql_db_user_namespace: off
 postgresql_row_security: off                                        # (>= 9.5)
 
+postgresql_ssl_crl_dir:
+posgresql_scram_iterations: 4096
+
 # Kerberos and GSSAPI
 postgresql_krb_server_keyfile: ""
 postgresql_krb_srvname: "postgres" # (<= 9.3)
 postgresql_krb_caseins_users: off
+postgresql_gss_accept_delegation: off
 
 # TCP Keepalives, 0 selects the system default (in seconds)
 postgresql_tcp_keepalives_idle: 0
@@ -255,6 +261,9 @@ postgresql_huge_pages: "try" # on, off, or try
 postgresql_huge_page_size: 0 # (>= 14)
 postgresql_temp_buffers: 8MB # min 800kB
 postgresql_max_prepared_transactions: 0 # zero disables the feature
+
+postgresql_huge_page_size: 0
+postgresql_hash_mem_multiplier:
 
 # Caution: it is not advisable to set max_prepared_transactions nonzero unless
 # you actively intend to use prepared transactions.
@@ -444,6 +453,7 @@ postgresql_max_standby_archive_delay: 30s # -1 allows indefinite delay
 postgresql_max_standby_streaming_delay: 30s # -1 allows indefinite delay
 postgresql_wal_receiver_create_temp_slot: off # (>= 13)
 # send replies at least this often
+postgresql_wal_receiver_create_temp_slot: off # create temp slot if primary_slot_name
 postgresql_wal_receiver_status_interval: 10s # 0 disables
 # send info from standby to prevent query conflicts
 postgresql_hot_standby_feedback: off
@@ -705,6 +715,7 @@ postgresql_autovacuum_naptime: 1min
 postgresql_autovacuum_vacuum_threshold: 50
 postgresql_autovacuum_vacuum_insert_threshold: 1000 # (>= 13)
 # min number of row updates before analyze
+postgresql_autovacuum_vacuum_insert_threshold: 1000
 postgresql_autovacuum_analyze_threshold: 50
 # fraction of table size before vacuum
 postgresql_autovacuum_vacuum_scale_factor: 0.2
@@ -712,6 +723,7 @@ postgresql_autovacuum_vacuum_insert_scale_factor: 0.2 # (>= 13)
 # fraction of table size before analyze
 postgresql_autovacuum_analyze_scale_factor: 0.1
 # maximum XID age before forced vacuum
+postgresql_autovacuum_vacuum_insert_scale_factor: 0.2
 postgresql_autovacuum_freeze_max_age: 200000000
 # maximum Multixact age before forced vacuum (>= 9.3)
 postgresql_autovacuum_multixact_freeze_max_age: 400000000
