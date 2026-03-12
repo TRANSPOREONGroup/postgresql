@@ -37,6 +37,16 @@
     creates: /usr/share/postgresql-common/pgdg/apt.postgresql.org.gpg
   when: ansible_facts['pkg_mgr'] == 'apt'
 
+# --- Remove old repository file ---
+# We use a new repo file in next task
+- name: PostgreSQL | Remove old PostgreSQL repository | apt
+  apt_repository:
+    repo: "deb http://apt.postgresql.org/pub/repos/apt/ {{ ansible_distribution_release }}-pgdg main {{ postgresql_version }}"
+    state: absent
+  when:
+    - ansible_facts['pkg_mgr'] == 'apt'
+    - (postgresql_install_repository | default(true)) | bool
+
 # --- Add the PGDG APT repository (HTTPS + signed-by) ---
 # We explicitly build the repo line to ensure the correct suite and signed-by usage.
 - name: Add PGDG APT repository
