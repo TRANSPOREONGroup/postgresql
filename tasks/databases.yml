@@ -28,7 +28,7 @@
     db: "{{ item.0.db }}"
     login_unix_socket: "/srv/{{ postgresql_service_user }}"
     login_user: "{{ postgresql_service_user }}"
-    port: "{{ postgresql_port }}"
+    login_port: "{{ postgresql_port }}"
     name: "{{ item.1 }}"
     cascade: True
   with_subelements:
@@ -50,7 +50,7 @@
 - name: PostgreSQL | Add uuid-ossp to the database with the requirement
   become: True
   become_user: "{{ postgresql_service_user }}"
-  ansible.builtin.shell: "{{ postgresql_bin_directory}}/psql {{ item.name }} --port={{ postgresql_port | int }} --username {{ postgresql_admin_user }} -c 'CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";'"
+  ansible.builtin.shell: '{{ postgresql_bin_directory}}/psql {{ item.name }} --port={{ postgresql_port | int }} --username {{ postgresql_admin_user }} -c ''CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'''
   with_items: "{{ postgresql_databases }}"
   register: uuid_ext_result
   failed_when: uuid_ext_result.rc != 0 and ("already exists, skipping" not in uuid_ext_result.stderr)
