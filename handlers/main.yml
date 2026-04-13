@@ -1,11 +1,8 @@
 # file: postgresql/handlers/main.yml
 
-- name: reload postgresql
-  service:
-    name: "{{ postgresql_service_name }}"
-    state: reloaded
-    enabled: yes
-
-- name: Reload systemd daemon
-  ansible.builtin.command: systemctl daemon-reload
-  become: true
+  - name: reload postgresql
+    service:
+      name: "{{ postgresql_service_name }}"
+      state: reloaded
+      enabled: yes
+    become: true

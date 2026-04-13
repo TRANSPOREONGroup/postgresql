@@ -1,17 +1,16 @@
 # file: postgresql/tasks/schemas.yml
 
 - name: PostgreSQL | Add Schema to databases
-  community.postgresql.postgresql_schema:
-    login_db: "{{ item.database }}"
-    name: "{{ item.schema }}"
+  postgresql_schema:
+    database: "{{ item.database }}"
+    schema: "{{ item.schema }}"
     owner: "{{ item.owner | default(postgresql_database_owner) }}"
     login_host: "{{ item.host | default(omit) }}"
     login_password: "{{ item.password | default(omit) }}"
     login_user: "{{ postgresql_admin_user }}"
-    login_port: "{{ postgresql_port }}"
+    port: "{{ postgresql_port }}"
     state: "{{ item.state | default('present') }}"
   become: yes
   become_user: "{{ postgresql_admin_user }}"
-  no_log: "{{ postgresql_hide_passwords }}"
-  loop: "{{ postgresql_database_schemas | default([]) }}"
-  when: (postgresql_database_schemas | default([])) | length > 0
+  with_items: "{{ postgresql_database_schemas }}"
+  when: postgresql_databases|length > 0

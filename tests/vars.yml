@@ -1,25 +1,22 @@
 ---
+
+postgresql_version: 12
 postgresql_port: 5433
 
 postgresql_databases:
   - name: foobar
     owner: baz
 
-  - name: qux
-    owner: baz
-    state: absent
-
 postgresql_users:
+
+  # postgresql >=10 does not accept unencrypted passwords
   - name: baz
-    pass: SCRAM-SHA-256$4096:En1EXwWCRrgFjvDuZ3m5WQ==$Bt4eGQmfMdiTeuz3ZArSBN4XOq+r4VRKW1HZIyxbhUo=:PMAr9udG0/5+5c+36BDO37XFgr/jMDoulhYVwy3haXc=
+    pass: md51a1dc91c907325c69271ddf0c944bc72
     encrypted: yes
 
   - name: zab
-    pass: SCRAM-SHA-256$4096:En1EXwWCRrgFjvDuZ3m5WQ==$Bt4eGQmfMdiTeuz3ZArSBN4XOq+r4VRKW1HZIyxbhUo=:PMAr9udG0/5+5c+36BDO37XFgr/jMDoulhYVwy3haXc=
+    pass: md51a1dc91c907325c69271ddf0c944bc72
     encrypted: yes
-
-  - name: foo
-    state: absent
 
   - name: zabaz
 
