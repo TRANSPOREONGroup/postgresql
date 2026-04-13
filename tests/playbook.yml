@@ -1,15 +1,9 @@
 ---
-- hosts: all
-  become: yes
-  gather_facts: true
 
+- hosts: all
+  remote_user: root
+  become: yes
   vars_files:
     - ./vars.yml
-
-  pre_tasks:
-    - name: Load OS-specific vars (first match wins)
-      ansible.builtin.include_vars:
-        file: "vars.{{ ansible_facts.distribution }}.{{ ansible_facts.distribution_major_version }}.yml"
-
   roles:
-    - role: "{{ lookup('env','MOLECULE_PROJECT_DIRECTORY') }}"
+    - postgresql

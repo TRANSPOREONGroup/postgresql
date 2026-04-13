@@ -1,90 +1,56 @@
 # file: postgresql/tasks/main.yml
 
-# --- Load OS-specific variables ---
-- name: Load OS-specific variables
-  ansible.builtin.include_vars:
-    file: "{{ item }}"
-  loop: "{{ query('first_found', params, errors='ignore', wantlist=True) }}"
-  vars:
-    os_family: "{{ ansible_facts.get('os_family', '') }}"
-    os_major:  "{{ ansible_facts.get('distribution_major_version', '') }}"
-    params:
-      files:
-        - "{{ os_family }}_{{ os_major }}.yml"
-        - "{{ os_family }}.yml"
-        - "empty.yml"
-      paths:
-        - "{{ role_path }}/vars"
+- include_vars: "{{ item }}"
+  with_first_found:
+    - "../vars/{{ ansible_os_family }}.yml"
+    - "../vars/empty.yml"
   tags: [always]
 
-# --- Vars dépendantes de la version de PostgreSQL ---
-- name: Load PostgreSQL version variables
-  ansible.builtin.include_vars: "{{ item }}"
-  loop: "{{ query('first_found', first_found_pg, wantlist=True) }}"
-  vars:
-    first_found_pg:
-      files:
-        - "postgresql_{{ postgresql_version }}.yml"
-        - "empty.yml"
-      paths:
-        - "{{ role_path }}/vars"
+#
+# Override defaults/main.yml with PostgreSQL version specific values
+#
+- include_vars: "{{ item }}"
+  with_first_found:
+    - "../vars/postgresql_{{ postgresql_version }}.yml"
+    - "../vars/empty.yml"
   tags: [always]
 
-# --- Installers par famille/distro ---
-- name: Install on APT-based systems
-  ansible.builtin.import_tasks: install_apt.yml
-  when: ansible_facts['pkg_mgr'] == 'apt'
+- import_tasks: install_apt.yml
+  when: ansible_pkg_mgr == "apt"
   tags: [postgresql, postgresql-install]
 
-- name: Install on RHEL-like (non-Fedora)
-  ansible.builtin.import_tasks: install_rhel.yml
-  when:
-    - ansible_facts['pkg_mgr'] in ['yum', 'dnf']
-    - ansible_facts['os_family'] == 'RedHat'
-    - ansible_facts['distribution'] not in ['Fedora']
+- import_tasks: install_yum.yml
+  when: ansible_pkg_mgr == "yum" and ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "OracleLinux")
   tags: [postgresql, postgresql-install]
 
-- name: Install on Fedora
-  ansible.builtin.import_tasks: install_fedora.yml
-  when:
-    - ansible_facts['pkg_mgr'] == 'dnf'
-    - ansible_facts['distribution'] == 'Fedora'
+- import_tasks: install_dnf.yml
+  when: ansible_pkg_mgr == "dnf" and ansible_distribution == "Fedora"
   tags: [postgresql, postgresql-install]
 
-# --- Reste du rôle ---
-- name: Extensions
-  ansible.builtin.import_tasks: extensions.yml
+- import_tasks: extensions.yml
   tags: [postgresql, postgresql-extensions]
 
-- name: FDW
-  ansible.builtin.import_tasks: fdw.yml
+- import_tasks: fdw.yml
   tags: [postgresql, postgresql-fdw]
 
-- name: Configure
-  ansible.builtin.import_tasks: configure.yml
+- import_tasks: configure.yml
   tags: [postgresql, postgresql-configure]
 
-- name: Users
-  ansible.builtin.import_tasks: users.yml
+- import_tasks: users.yml
   tags: [postgresql, postgresql-users]
 
-- name: Databases
-  ansible.builtin.import_tasks: databases.yml
+- import_tasks: databases.yml
   tags: [postgresql, postgresql-databases]
 
-- name: Schemas
-  ansible.builtin.import_tasks: schemas.yml
+- import_tasks: schemas.yml
   tags: [postgresql, postgresql-schemas]
 
-- name: Users privileges
-  ansible.builtin.import_tasks: users_privileges.yml
+- import_tasks: users_privileges.yml
   tags: [postgresql, postgresql-users]
 
-- name: Monit (optional)
-  ansible.builtin.import_tasks: monit.yml
-  when: (monit_protection | default(false)) | bool
+- import_tasks: monit.yml
+  when: monit_protection is defined and monit_protection == true
   tags: [postgresql, postgresql-monit]
 
-- name: Check PG version mismatch
-  ansible.builtin.import_tasks: check_pg_version_mismatch.yml
+- import_tasks: check_pg_version_mismatch.yml
   tags: [postgresql, postgresql-version-mismatch]

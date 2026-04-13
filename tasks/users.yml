@@ -6,7 +6,7 @@
     state: started
 
 - name: PostgreSQL | Make sure the PostgreSQL users are present
-  community.postgresql.postgresql_user:
+  postgresql_user:
     name: "{{item.name}}"
     password: "{{ item.pass | default(omit) }}"
     encrypted: "{{ item.encrypted | default(omit) }}"
@@ -17,8 +17,6 @@
     db: postgres
   no_log: true
   become: yes
-  become_user: "{{ postgresql_admin_user }}"
-  loop: "{{ postgresql_users | default([]) }}"
-  when: (postgresql_users | default([])) | length > 0
-  loop_control:
-    label: "{{ item.name }}"
+  become_user: "{{postgresql_admin_user}}"
+  with_items: "{{postgresql_users}}"
+  when: postgresql_users|length > 0
